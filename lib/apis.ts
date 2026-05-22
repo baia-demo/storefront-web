@@ -53,3 +53,21 @@ export async function createOrder(input: {
   if (!res.ok) throw new Error(`orders-api ${res.status}`);
   return (await res.json()) as Order;
 }
+
+export async function getOrder(id: string): Promise<Order | null> {
+  const res = await fetch(new URL(`/orders/${id}`, ORDERS_BASE), {
+    cache: "no-store",
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`orders-api ${res.status}`);
+  return (await res.json()) as Order;
+}
+
+export async function listOrders(): Promise<Order[]> {
+  const res = await fetch(new URL("/orders", ORDERS_BASE), {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`orders-api ${res.status}`);
+  const data = (await res.json()) as { items: Order[] };
+  return data.items;
+}
