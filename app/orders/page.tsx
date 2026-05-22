@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listOrders } from "@/lib/apis";
+import { listOrders, type Order } from "@/lib/apis";
 
 function brl(value: number): string {
   return `R$ ${value.toFixed(2).replace(".", ",")}`;
@@ -14,7 +14,7 @@ function formatDate(iso: string): string {
 }
 
 export default async function OrdersPage() {
-  let orders = [];
+  let orders: Order[] = [];
   let error: string | null = null;
 
   try {
