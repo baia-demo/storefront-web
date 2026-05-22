@@ -62,7 +62,7 @@ export function ReportBugWidget() {
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-amber-600"
       >
-        Reportar bug
+        Mandar feedback
       </button>
 
       {open && (
@@ -71,7 +71,7 @@ export function ReportBugWidget() {
             {submitted ? (
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold">
-                  Bug reportado!
+                  Feedback enviado!
                 </h2>
                 <p className="text-sm text-slate-600">
                   Foi aberta a issue{" "}
@@ -83,8 +83,9 @@ export function ReportBugWidget() {
                   >
                     #{submitted.number}
                   </a>{" "}
-                  no GitHub. Em instantes, um agente de IA vai analisar o
-                  código para classificar e rotear pra o repositório correto.
+                  no GitHub. Em instantes, um agente de IA vai classificar
+                  (bug, sugestão, dúvida) e, se for o caso, abrir uma issue
+                  técnica no repositório certo.
                 </p>
                 <button
                   onClick={reset}
@@ -96,7 +97,12 @@ export function ReportBugWidget() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-start justify-between">
-                  <h2 className="text-lg font-semibold">Reportar um bug</h2>
+                  <div>
+                    <h2 className="text-lg font-semibold">Mandar feedback</h2>
+                    <p className="text-xs text-slate-500">
+                      Bug, sugestão de melhoria ou dúvida — tudo aqui.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
@@ -109,26 +115,26 @@ export function ReportBugWidget() {
 
                 <label className="block text-sm">
                   <span className="mb-1 block text-slate-700">
-                    Título do bug
+                    Resumo
                   </span>
                   <input
                     name="title"
                     type="text"
                     required
-                    placeholder="Ex: busca não retorna camisetas no plural"
+                    placeholder="Ex: busca não acha 'tenis' sem acento"
                     className="w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
 
                 <label className="block text-sm">
                   <span className="mb-1 block text-slate-700">
-                    Descrição (passos pra reproduzir)
+                    Detalhes
                   </span>
                   <textarea
                     name="description"
                     required
                     rows={5}
-                    placeholder="O que você fez? O que aconteceu? O que era esperado?"
+                    placeholder="Se for bug, descreva como reproduzir. Se for sugestão, conta o que melhoraria. Dúvida também serve."
                     className="w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -140,7 +146,7 @@ export function ReportBugWidget() {
                   <input
                     name="reporter"
                     type="text"
-                    placeholder="Para a galera te citar"
+                    placeholder="Pra a gente te citar na resposta"
                     className="w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -156,7 +162,7 @@ export function ReportBugWidget() {
                   disabled={submitting}
                   className="w-full rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60"
                 >
-                  {submitting ? "Enviando..." : "Enviar relato"}
+                  {submitting ? "Enviando..." : "Enviar"}
                 </button>
               </form>
             )}

@@ -16,8 +16,8 @@ export default async function HomePage() {
       <section>
         <h1 className="text-3xl font-bold">Catálogo</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Loja fictícia da demo do BaIA. Encontrou um bug? Use o botão de
-          reportar no canto inferior direito.
+          Loja fictícia da demo do BaIA. Achou um bug ou tem uma sugestão?
+          Use o botão "Mandar feedback" no canto inferior direito.
         </p>
       </section>
 
