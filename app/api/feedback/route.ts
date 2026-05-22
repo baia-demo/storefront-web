@@ -24,16 +24,9 @@ function deriveTitle(type: string, description: string): string {
 }
 
 export async function POST(request: Request) {
-  const token = process.env.REPORTS_GITHUB_TOKEN;
-  const repo = process.env.REPORTS_REPO ?? "baia-demo/user-feedback";
-
-  if (!token) {
-    return NextResponse.json(
-      { error: "github_token_not_configured" },
-      { status: 500 }
-    );
-  }
-
+  // Valida input ANTES de checar config — assim payloads inválidos retornam
+  // 400 mesmo em deploys que ainda não têm REPORTS_GITHUB_TOKEN setado
+  // (ex: preview deploys, onde o smoke roda).
   let payload: ReportPayload;
   try {
     payload = (await request.json()) as ReportPayload;
@@ -61,6 +54,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "email_required" },
       { status: 400 }
+    );
+  }
+
+  const token = process.env.REPORTS_GITHUB_TOKEN;
+  const repo = process.env.REPORTS_REPO ?? "baia-demo/user-feedback";
+
+  if (!token) {
+    return NextResponse.json(
+      { error: "github_token_not_configured" },
+      { status: 500 }
     );
   }
 
