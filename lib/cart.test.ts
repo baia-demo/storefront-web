@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { addToCart, cartTotal } from "./cart";
 import type { Product } from "./apis";
 
@@ -32,6 +32,42 @@ describe("cartTotal", () => {
       { productId: "a", name: "A", price: 9.9, quantity: 3 },
     ]);
     expect(total).toBeCloseTo(29.7, 2);
+  });
+});
+
+describe("addToCart - acumulação (com localStorage mockado)", () => {
+  let store: Record<string, string>;
+
+  beforeEach(() => {
+    store = {};
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: (key: string) => store[key] ?? null,
+          setItem: (key: string, val: string) => {
+            store[key] = val;
+          },
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "window", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  test("acumula quantidade ao adicionar o mesmo produto duas vezes", () => {
+    const product = makeProduct({ id: "p-acc" });
+    addToCart(product, 2);
+    const result = addToCart(product, 3);
+    const item = result.find((l) => l.productId === "p-acc");
+    expect(item?.quantity).toBe(5);
   });
 });
 
