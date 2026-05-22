@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { addToCart, cartTotal } from "./cart";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { addToCart, cartTotal, removeFromCart } from "./cart";
 import type { Product } from "./apis";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -32,6 +32,33 @@ describe("cartTotal", () => {
       { productId: "a", name: "A", price: 9.9, quantity: 3 },
     ]);
     expect(total).toBeCloseTo(29.7, 2);
+  });
+});
+
+describe("removeFromCart", () => {
+  let storage: Record<string, string> = {};
+
+  beforeEach(() => {
+    storage = {};
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => storage[key] ?? null,
+        setItem: (key: string, value: string) => { storage[key] = value; },
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("remove apenas o item com o productId informado", () => {
+    // Reproduz o bug: antes usava === em vez de !==, removendo os outros itens
+    addToCart(makeProduct({ id: "r-001", name: "A", price: 10 }), 1);
+    addToCart(makeProduct({ id: "r-002", name: "B", price: 20 }), 1);
+    const result = removeFromCart("r-001");
+    expect(result.some((l) => l.productId === "r-001")).toBe(false);
+    expect(result.some((l) => l.productId === "r-002")).toBe(true);
   });
 });
 
