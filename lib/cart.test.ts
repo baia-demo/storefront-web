@@ -59,4 +59,40 @@ describe("addToCart", () => {
     expect(result[0].name).toBe("Camiseta Azul");
     expect(result[0].price).toBe(79.9);
   });
+
+  test("acumula quantidade ao adicionar produto existente", () => {
+    const product = makeProduct({ id: "p-004" });
+    // Primeira adição: 2 unidades
+    let result = addToCart(product, 2);
+    expect(result[0].quantity).toBe(2);
+    
+    // Segunda adição: +3 unidades = 5 total
+    result = addToCart(product, 3);
+    expect(result[0].quantity).toBe(5);
+    
+    // Terceira adição: +1 unidade (padrão) = 6 total
+    result = addToCart(product);
+    expect(result[0].quantity).toBe(6);
+  });
+
+  test("acumula quantidade corretamente com múltiplos produtos", () => {
+    const productA = makeProduct({ id: "p-005", name: "Produto A" });
+    const productB = makeProduct({ id: "p-006", name: "Produto B" });
+    
+    // Adiciona produto A: 1 unidade
+    let result = addToCart(productA, 1);
+    expect(result).toHaveLength(1);
+    
+    // Adiciona produto B: 2 unidades
+    result = addToCart(productB, 2);
+    expect(result).toHaveLength(2);
+    
+    // Adiciona mais do produto A: +3 unidades = 4 total
+    result = addToCart(productA, 3);
+    expect(result).toHaveLength(2);
+    const itemA = result.find(l => l.productId === "p-005");
+    const itemB = result.find(l => l.productId === "p-006");
+    expect(itemA?.quantity).toBe(4);
+    expect(itemB?.quantity).toBe(2);
+  });
 });
