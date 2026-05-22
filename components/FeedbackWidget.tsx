@@ -14,7 +14,7 @@ const SITUATION_TYPES: { value: string; label: string }[] = [
   { value: "unclear", label: "Outro" },
 ];
 
-export function ReportBugWidget() {
+export function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function ReportBugWidget() {
     };
 
     try {
-      const res = await fetch("/api/report-bug", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),

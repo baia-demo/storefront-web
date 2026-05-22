@@ -10,6 +10,7 @@ Front-end da **ShopFlow** (demo do BaIA). Next.js 15 + App Router + Tailwind.
 | `/cart` | Carrinho (localStorage) |
 | `/checkout` | Checkout (chama `orders-api`) |
 | `/checkout/success` | Confirmação do pedido |
+| `/orders` | Histórico de pedidos |
 
 ## API routes internas (proxies)
 
@@ -17,16 +18,18 @@ Front-end da **ShopFlow** (demo do BaIA). Next.js 15 + App Router + Tailwind.
 |---|---|
 | `GET /api/catalog` | `catalog-api/products` |
 | `POST /api/orders` | `orders-api/orders` |
-| `POST /api/report-bug` | GitHub Issues (`baia-demo/bug-reports`) |
+| `POST /api/feedback` | GitHub Issues (`baia-demo/user-feedback`) |
 
-## Widget de "Reportar bug"
+## Widget "Central de ajuda"
 
-Botão fixo no canto inferior direito. Quando submetido:
+Botão fixo no canto inferior direito. Capta **feedback do usuário** —
+bugs, sugestões de melhoria ou dúvidas. Quando submetido:
 
-1. POST `/api/report-bug` com `{title, description, reporter, page}`
-2. Server-side cria issue em `baia-demo/bug-reports` com label `needs-triage`
-3. Workflow `bug-triage.yml` no repo `apresentacao-baia` é disparado
-4. Agente Claude Code analisa e cria issue no repo certo
+1. POST `/api/feedback` com `{type, description, email, page}`
+2. Server-side cria issue em `baia-demo/user-feedback` com label `needs-triage`
+3. Workflow `triage.yml` no repo `apresentacao-baia` é disparado
+4. Agente Claude Code classifica + (se `bug` ou `improvement`) cria issue
+   técnica no repo correto
 
 ## Env vars
 
@@ -34,8 +37,8 @@ Botão fixo no canto inferior direito. Quando submetido:
 |---|---|---|
 | `CATALOG_API_URL` | `http://localhost:3001` | Base URL do catalog-api |
 | `ORDERS_API_URL` | `http://localhost:3002` | Base URL do orders-api |
-| `REPORTS_GITHUB_TOKEN` | — | PAT com `issues:write` em `baia-demo/bug-reports` |
-| `REPORTS_REPO` | `baia-demo/bug-reports` | Repo onde os relatos viram issues |
+| `REPORTS_GITHUB_TOKEN` | — | PAT com `issues:write` em `baia-demo/user-feedback` |
+| `REPORTS_REPO` | `baia-demo/user-feedback` | Repo onde os relatos viram issues |
 
 ## Rodar local
 
@@ -47,8 +50,18 @@ npm run dev
 
 Suba `catalog-api` (porta 3001) e `orders-api` (porta 3002) em paralelo.
 
+## Tests
+
+```bash
+npm test          # unitários (vitest)
+```
+
 ## Deploy
 
+Deploy automático via GitHub Actions (`.github/workflows/deploy.yml`) em
+todo push pra `main`. Requer secret `FLY_API_TOKEN` no repo.
+
+Pra deploy manual:
 ```bash
 fly deploy
 fly secrets set REPORTS_GITHUB_TOKEN=ghp_...
@@ -60,20 +73,21 @@ fly secrets set ORDERS_API_URL=https://shopflow-orders-api.fly.dev
 
 ```
 app/
-├── layout.tsx                  # Layout root + widget de bug
+├── layout.tsx                  # Layout root + FeedbackWidget
 ├── page.tsx                    # Home com catálogo
 ├── cart/page.tsx               # Carrinho (client-side)
 ├── checkout/page.tsx           # Checkout
 ├── checkout/success/page.tsx   # Pós-compra
+├── orders/page.tsx             # Histórico de pedidos
 ├── api/
 │   ├── catalog/route.ts        # Proxy → catalog-api
 │   ├── orders/route.ts         # Proxy → orders-api
-│   └── report-bug/route.ts     # Cria issue no GitHub
-├── globals.css                 # Tailwind base
+│   └── feedback/route.ts       # Cria issue no GitHub
+└── globals.css                 # Tailwind base
 components/
 ├── ProductGrid.tsx             # Grid + busca
 ├── CheckoutForm.tsx            # Form do checkout
-└── ReportBugWidget.tsx         # Modal flutuante
+└── FeedbackWidget.tsx          # Modal flutuante "Central de ajuda"
 lib/
 ├── apis.ts                     # Fetch helpers
 └── cart.ts                     # Cart via localStorage

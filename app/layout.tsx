@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ReportBugWidget } from "@/components/ReportBugWidget";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ShopFlow — Demo BaIA",
-  description: "E-commerce de exemplo para a demo de triagem autônoma de bugs",
+  description: "E-commerce de exemplo para a demo de triagem autônoma de feedback do usuário",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-        <ReportBugWidget />
+        <FeedbackWidget />
       </body>
     </html>
   );
