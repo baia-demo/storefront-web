@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  APP_URL: https://shopflow-storefront.fly.dev
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -28,3 +31,34 @@ jobs:
       - run: flyctl deploy --remote-only --ha=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  smoke:
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Homepage carrega (HTML 200)
+        run: curl -sf --retry 5 --retry-delay 5 --retry-all-errors -o /dev/null "$APP_URL/"
+
+      - name: /api/catalog proxy retorna produtos (depende do catalog-api)
+        run: |
+          BODY=$(curl -sf "$APP_URL/api/catalog")
+          COUNT=$(echo "$BODY" | jq '.items | length')
+          echo "Produtos via proxy: $COUNT"
+          test "$COUNT" -gt 0
+
+      - name: /api/feedback valida payload vazio (400)
+        run: |
+          CODE=$(curl -sw "%{http_code}" -o /dev/null -X POST "$APP_URL/api/feedback" \
+            -H 'content-type: application/json' -d '{}')
+          test "$CODE" = "400"
+
+      - name: /api/feedback rejeita type inválido (400)
+        run: |
+          CODE=$(curl -sw "%{http_code}" -o /dev/null -X POST "$APP_URL/api/feedback" \
+            -H 'content-type: application/json' \
+            -d '{"type":"random","description":"x","email":"a@b.c"}')
+          test "$CODE" = "400"
+
+      - name: /orders page carrega (HTML 200)
+        run: curl -sf -o /dev/null "$APP_URL/orders"
