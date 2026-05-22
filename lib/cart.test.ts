@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { addToCart, cartTotal } from "./cart";
 import type { Product } from "./apis";
 
@@ -47,6 +47,25 @@ describe("addToCart", () => {
   test("respeita quantidade explícita ao adicionar produto novo", () => {
     const result = addToCart(makeProduct({ id: "p-002" }), 3);
     expect(result[0].quantity).toBe(3);
+  });
+
+  test("acumula quantidade ao adicionar o mesmo produto duas vezes", () => {
+    const store: Record<string, string> = {};
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store[key] ?? null,
+        setItem: (key: string, value: string) => { store[key] = value; },
+      },
+    });
+
+    const product = makeProduct({ id: "p-acc" });
+    addToCart(product, 2);
+    const result = addToCart(product, 3);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].quantity).toBe(5); // deve acumular: 2 + 3
+
+    vi.unstubAllGlobals();
   });
 
   test("popula campos do produto no item do carrinho", () => {
