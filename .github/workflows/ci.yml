@@ -4,12 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
 
 env:
-  APP_URL: https://shopflow-storefront.fly.dev
+  APP_NAME: shopflow-storefront
+  PROD_URL: https://shopflow-storefront.fly.dev
 
 jobs:
   test:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +23,73 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  preview-deploy:
+    needs: test
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    concurrency: preview-${{ github.event.pull_request.number }}
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Ensure preview app exists + secrets (aponta pra prod APIs)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_ORG_TOKEN }}
+        run: |
+          PREVIEW="${APP_NAME}-pr-${{ github.event.pull_request.number }}"
+          if ! flyctl status -a "$PREVIEW" >/dev/null 2>&1; then
+            flyctl apps create "$PREVIEW" --org personal
+          fi
+          flyctl secrets set --app "$PREVIEW" --stage \
+            CATALOG_API_URL=https://shopflow-catalog-api.fly.dev \
+            ORDERS_API_URL=https://shopflow-orders-api.fly.dev \
+            REPORTS_REPO=baia-demo/user-feedback
+      - name: Deploy preview
+        id: deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_ORG_TOKEN }}
+        run: |
+          PREVIEW="${APP_NAME}-pr-${{ github.event.pull_request.number }}"
+          flyctl deploy --remote-only --ha=false --app "$PREVIEW"
+          echo "url=https://${PREVIEW}.fly.dev" >> "$GITHUB_OUTPUT"
+
+  preview-smoke:
+    needs: preview-deploy
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ needs.preview-deploy.outputs.preview_url }}
+    steps:
+      - name: Homepage carrega
+        run: curl -sf --retry 5 --retry-delay 5 --retry-all-errors -o /dev/null "$APP_URL/"
+
+      - name: /api/catalog proxy retorna produtos
+        run: |
+          BODY=$(curl -sf "$APP_URL/api/catalog")
+          COUNT=$(echo "$BODY" | jq '.items | length')
+          test "$COUNT" -gt 0
+
+      - name: /api/feedback valida payload vazio
+        run: |
+          CODE=$(curl -sw "%{http_code}" -o /dev/null -X POST "$APP_URL/api/feedback" \
+            -H 'content-type: application/json' -d '{}')
+          test "$CODE" = "400"
+
+      - name: /orders page carrega
+        run: curl -sf -o /dev/null "$APP_URL/orders"
+
+  preview-cleanup:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Destroy preview app
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_ORG_TOKEN }}
+        run: |
+          PREVIEW="${APP_NAME}-pr-${{ github.event.pull_request.number }}"
+          flyctl apps destroy "$PREVIEW" --yes || true
 
   deploy:
     needs: test
@@ -36,29 +107,30 @@ jobs:
     needs: deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ env.PROD_URL }}
     steps:
-      - name: Homepage carrega (HTML 200)
+      - name: Homepage carrega
         run: curl -sf --retry 5 --retry-delay 5 --retry-all-errors -o /dev/null "$APP_URL/"
 
-      - name: /api/catalog proxy retorna produtos (depende do catalog-api)
+      - name: /api/catalog proxy retorna produtos
         run: |
           BODY=$(curl -sf "$APP_URL/api/catalog")
           COUNT=$(echo "$BODY" | jq '.items | length')
-          echo "Produtos via proxy: $COUNT"
           test "$COUNT" -gt 0
 
-      - name: /api/feedback valida payload vazio (400)
+      - name: /api/feedback valida payload vazio
         run: |
           CODE=$(curl -sw "%{http_code}" -o /dev/null -X POST "$APP_URL/api/feedback" \
             -H 'content-type: application/json' -d '{}')
           test "$CODE" = "400"
 
-      - name: /api/feedback rejeita type inválido (400)
+      - name: /api/feedback rejeita type inválido
         run: |
           CODE=$(curl -sw "%{http_code}" -o /dev/null -X POST "$APP_URL/api/feedback" \
             -H 'content-type: application/json' \
             -d '{"type":"random","description":"x","email":"a@b.c"}')
           test "$CODE" = "400"
 
-      - name: /orders page carrega (HTML 200)
+      - name: /orders page carrega
         run: curl -sf -o /dev/null "$APP_URL/orders"
