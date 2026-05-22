@@ -1,8 +1,8 @@
-import { fetchProducts } from "@/lib/apis";
+import { fetchProducts, type Product } from "@/lib/apis";
 import { ProductGrid } from "@/components/ProductGrid";
 
 export default async function HomePage() {
-  let products = [];
+  let products: Product[] = [];
   let error: string | null = null;
 
   try {
