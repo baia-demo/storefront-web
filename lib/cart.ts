@@ -39,7 +39,7 @@ export function addToCart(product: Product, quantity = 1): CartLine[] {
 }
 
 export function removeFromCart(productId: string): CartLine[] {
-  const filtered = readCart().filter((l) => l.productId !== productId);
+  const filtered = readCart().filter((l) => l.productId === productId);
   writeCart(filtered);
   return filtered;
 }
