@@ -7,6 +7,13 @@ interface Submitted {
   url: string;
 }
 
+const SITUATION_TYPES: { value: string; label: string }[] = [
+  { value: "bug", label: "Reportar um problema" },
+  { value: "improvement", label: "Sugerir uma melhoria" },
+  { value: "question", label: "Tirar uma dúvida" },
+  { value: "unclear", label: "Outro" },
+];
+
 export function ReportBugWidget() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -20,9 +27,9 @@ export function ReportBugWidget() {
 
     const form = new FormData(e.currentTarget);
     const payload = {
-      title: String(form.get("title") ?? ""),
+      type: String(form.get("type") ?? ""),
       description: String(form.get("description") ?? ""),
-      reporter: String(form.get("reporter") ?? ""),
+      email: String(form.get("email") ?? ""),
       page:
         typeof window !== "undefined"
           ? window.location.pathname
@@ -62,7 +69,7 @@ export function ReportBugWidget() {
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-amber-600"
       >
-        Mandar feedback
+        Central de ajuda
       </button>
 
       {open && (
@@ -71,10 +78,10 @@ export function ReportBugWidget() {
             {submitted ? (
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold">
-                  Feedback enviado!
+                  Recebemos seu contato!
                 </h2>
                 <p className="text-sm text-slate-600">
-                  Foi aberta a issue{" "}
+                  Foi aberto o chamado{" "}
                   <a
                     href={submitted.url}
                     target="_blank"
@@ -82,10 +89,10 @@ export function ReportBugWidget() {
                     className="font-mono text-brand underline"
                   >
                     #{submitted.number}
-                  </a>{" "}
-                  no GitHub. Em instantes, um agente de IA vai classificar
-                  (bug, sugestão, dúvida) e, se for o caso, abrir uma issue
-                  técnica no repositório certo.
+                  </a>
+                  . Em instantes, um agente de IA vai classificar a
+                  situação e, se for o caso, abrir uma issue técnica no
+                  repositório correto.
                 </p>
                 <button
                   onClick={reset}
@@ -98,9 +105,9 @@ export function ReportBugWidget() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold">Mandar feedback</h2>
+                    <h2 className="text-lg font-semibold">Central de ajuda</h2>
                     <p className="text-xs text-slate-500">
-                      Bug, sugestão de melhoria ou dúvida — tudo aqui.
+                      Conta o que aconteceu, ou o que você gostaria.
                     </p>
                   </div>
                   <button
@@ -115,38 +122,45 @@ export function ReportBugWidget() {
 
                 <label className="block text-sm">
                   <span className="mb-1 block text-slate-700">
-                    Resumo
+                    Tipo da situação
                   </span>
-                  <input
-                    name="title"
-                    type="text"
+                  <select
+                    name="type"
                     required
-                    placeholder="Ex: busca não acha 'tenis' sem acento"
-                    className="w-full rounded border border-slate-300 px-3 py-2"
-                  />
+                    defaultValue=""
+                    className="w-full rounded border border-slate-300 bg-white px-3 py-2"
+                  >
+                    <option value="" disabled>
+                      Selecione...
+                    </option>
+                    {SITUATION_TYPES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="block text-sm">
                   <span className="mb-1 block text-slate-700">
-                    Detalhes
+                    Descrição
                   </span>
                   <textarea
                     name="description"
                     required
                     rows={5}
-                    placeholder="Se for bug, descreva como reproduzir. Se for sugestão, conta o que melhoraria. Dúvida também serve."
+                    placeholder="Conta o que aconteceu, como reproduzir ou o que você gostaria..."
                     className="w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
 
                 <label className="block text-sm">
-                  <span className="mb-1 block text-slate-700">
-                    Seu nome (opcional)
-                  </span>
+                  <span className="mb-1 block text-slate-700">E-mail</span>
                   <input
-                    name="reporter"
-                    type="text"
-                    placeholder="Pra a gente te citar na resposta"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="seu@email.com"
                     className="w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>

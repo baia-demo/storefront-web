@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 
 interface ReportPayload {
-  title?: string;
+  type?: string;
   description?: string;
+  email?: string;
   page?: string;
-  reporter?: string;
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  bug: "Problema",
+  improvement: "Sugestão",
+  question: "Dúvida",
+  unclear: "Outro",
+};
+
+function deriveTitle(type: string, description: string): string {
+  const typeLabel = TYPE_LABELS[type] ?? "Contato";
+  const firstLine = description.split(/\r?\n/, 1)[0]?.trim() ?? "";
+  const trimmed = firstLine.length > 80
+    ? firstLine.slice(0, 77).trimEnd() + "..."
+    : firstLine;
+  return `[${typeLabel}] ${trimmed || "(sem detalhes)"}`;
 }
 
 export async function POST(request: Request) {
   const token = process.env.REPORTS_GITHUB_TOKEN;
-  const repo = process.env.REPORTS_REPO ?? "baia-demo/bug-reports";
+  const repo = process.env.REPORTS_REPO ?? "baia-demo/user-feedback";
 
   if (!token) {
     return NextResponse.json(
@@ -25,25 +41,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const title = payload.title?.trim();
+  const type = payload.type?.trim();
   const description = payload.description?.trim();
+  const email = payload.email?.trim();
 
-  if (!title || !description) {
+  if (!type || !TYPE_LABELS[type]) {
     return NextResponse.json(
-      { error: "title_and_description_required" },
+      { error: "invalid_type" },
+      { status: 400 }
+    );
+  }
+  if (!description) {
+    return NextResponse.json(
+      { error: "description_required" },
+      { status: 400 }
+    );
+  }
+  if (!email) {
+    return NextResponse.json(
+      { error: "email_required" },
       { status: 400 }
     );
   }
 
-  const reporter = payload.reporter?.trim() || "anonymous";
   const page = payload.page?.trim() || "unknown";
+  const title = deriveTitle(type, description);
 
   const body = [
+    `**Tipo informado pelo usuário:** ${TYPE_LABELS[type]} (\`${type}\`)`,
+    "",
+    "**Descrição:**",
+    "",
     description,
     "",
     "---",
     "",
-    `**Reportado por:** ${reporter}`,
+    `**E-mail do reportador:** ${email}`,
     `**Página:** ${page}`,
     `**User agent:** ${request.headers.get("user-agent") ?? "unknown"}`,
     `**Reportado em:** ${new Date().toISOString()}`,
@@ -58,7 +91,7 @@ export async function POST(request: Request) {
       "x-github-api-version": "2022-11-28",
     },
     body: JSON.stringify({
-      title: `[ShopFlow] ${title}`,
+      title,
       body,
       labels: ["needs-triage"],
     }),
