@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { addToCart, cartTotal } from "./cart";
+import { addToCart, cartTotal, removeFromCart } from "./cart";
 import type { Product } from "./apis";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -77,5 +77,30 @@ describe("addToCart", () => {
     const result = addToCart(product, 1);
     expect(result[0].name).toBe("Camiseta Azul");
     expect(result[0].price).toBe(79.9);
+  });
+});
+
+describe("removeFromCart", () => {
+  test("remove apenas o produto alvo, mantendo os demais", () => {
+    const store: Record<string, string> = {};
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store[key] ?? null,
+        setItem: (key: string, value: string) => { store[key] = value; },
+      },
+    });
+
+    addToCart(makeProduct({ id: "p-a" }), 1);
+    addToCart(makeProduct({ id: "p-b" }), 2);
+    addToCart(makeProduct({ id: "p-c" }), 3);
+
+    const result = removeFromCart("p-b");
+
+    expect(result).toHaveLength(2);
+    expect(result.find((l) => l.productId === "p-b")).toBeUndefined();
+    expect(result.find((l) => l.productId === "p-a")).toBeDefined();
+    expect(result.find((l) => l.productId === "p-c")).toBeDefined();
+
+    vi.unstubAllGlobals();
   });
 });
